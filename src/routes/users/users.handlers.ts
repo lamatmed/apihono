@@ -93,7 +93,9 @@ export const login: AppRouteHandler<LoginRoute> = async (c) => {
     return c.json({ message: "Invalid credentials" }, HttpStatusCodes.UNAUTHORIZED);
   }
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1d" });
-  return c.json({ token }, HttpStatusCodes.OK);
+  // Ajoute les infos utilisateur (hors mot de passe)
+  const { id, nom, email, createdAt } = user;
+  return c.json({ token, user: { id, nom, email, createdAt: Number(createdAt) } }, HttpStatusCodes.OK);
 };
 
 export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
