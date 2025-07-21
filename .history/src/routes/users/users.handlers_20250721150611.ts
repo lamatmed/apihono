@@ -1,0 +1,174 @@
+/* eslint-disable node/no-process-env */
+/* eslint-disable perfectionist/sort-named-imports */
+/* eslint-disable perfectionist/sort-imports */
+
+import { eq } from "drizzle-orm";
+import * as HttpStatusCodes from "stoker/http-status-codes";
+import * as HttpStatusPhrases from "stoker/http-status-phrases";
+import { hash, compare } from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+import type { AppRouteHandler } from "@/lib/types";
+import db from "@/db";
+import { users } from "@/db/schema";
+import { ZOD_ERROR_CODES, ZOD_ERROR_MESSAGES } from "@/lib/constants";
+
+import type {
+  RegisterRoute,
+  LoginRoute,
+  GetOneRoute,
+  ListRoute,
+  CreateRoute,
+  PatchRoute,
+  RemoveRoute
+} from "./users.routes";
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
+
+export const register: AppRouteHandler<RegisterRoute> = async (c) => {
+  const data = c.req.valid("json");
+  const hashedPassword = await hash(data.password, 10);
+  const [user] = await db.insert(users).values({
+    nom: data.nom,
+    email: data.email,
+    password: hashedPassword,
+  }).returning();
+  if (!user) {
+    return c.json({
+      error: {
+        issues: [
+          {
+            code: "custom",
+            path: [],
+            message: "Registration failed"
+          }
+        ],
+        name: "ZodError"
+      },
+      success: false
+    }, HttpStatusCodes.UNPROCESSABLE_ENTITY);
+  }
+  const { id, nom, email, createdAt } = user;
+  return c.json({
+    id,
+    nom,
+    email,
+    createdAt: createdAt ? Number(createdAt) : null,
+  }, HttpStatusCodes.OK);
+};
+
+export const login: AppRouteHandler<LoginRoute> = async (c) => {
+  const data = c.req.valid("json");
+  const user = await db.query.users.findFirst({
+    where(fields, operators) {
+      return operators.eq(fields.email, data.email);
+    },
+  });
+  if (!user) {
+    return c.json({ message: "Invalid credentials" }, HttpStatusCodes.UNAUTHORIZED);
+  }
+  const valid = await compare(data.password, user.password);
+  if (!valid) {
+    return c.json({ message: "Invalid credentials" }, HttpStatusCodes.UNAUTHORIZED);
+  }
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1d" });
+  return c.json({ token }, HttpStatusCodes.OK);
+};
+
+export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
+  const { id } = c.req.valid("param");
+  const user = await db.query.users.findFirst({
+    where(fields, operators) {
+      return operators.eq(fields.id, id);
+    },
+  });
+  if (!user) {
+    return c.json({ message: HttpStatusPhrases.NOT_FOUND }, HttpStatusCodes.NOT_FOUND);
+  }
+  const { password, ...userData } = user;
+  return c.json(userData, HttpStatusCodes.OK);
+};
+
+export const list: AppRouteHandler<ListRoute> = async (c) => {
+  const usersList = await db.query.users.findMany();
+  const safeUsers = usersList.map(({ password, ...u }) => u);
+  return c.json(safeUsers);
+};
+
+export const create: AppRouteHandler<CreateRoute> = async (c) => {
+  const data = c.req.valid("json");
+  const hashedPassword = await hash(data.password, 10);
+  const [user] = await db.insert(users).values({
+    ...data,
+    password: hashedPassword,
+  }).returning();
+  if (!user) {
+    return c.json({
+      error: {
+        issues: [
+          {
+            code: "custom",
+            path: [],
+            message: "User creation failed"
+          }
+        ],
+        name: "ZodError"
+      },
+      success: false
+    }, HttpStatusCodes.UNPROCESSABLE_ENTITY);
+  }
+  const { id, nom, email, createdAt } = user;
+  return c.json({
+    id,
+    nom,
+    email,
+    createdAt: createdAt ? Number(createdAt) : null,
+  }, HttpStatusCodes.OK);
+};
+
+export const patch: AppRouteHandler<PatchRoute> = async (c) => {
+  const { id } = c.req.valid("param");
+  const updates = c.req.valid("json");
+  if (Object.keys(updates).length === 0) {
+    return c.json({
+      error: {
+        issues: [
+          {
+            code: ZOD_ERROR_CODES.INVALID_UPDATES,
+            path: [],
+            message: ZOD_ERROR_MESSAGES.NO_UPDATES,
+          },
+        ],
+        name: "ZodError",
+      },
+      success: false
+    }, HttpStatusCodes.UNPROCESSABLE_ENTITY);
+  }
+  if (updates.password) {
+    updates.password = await hash(updates.password, 10);
+  }
+  const [user] = await db.update(users)
+    .set(updates)
+    .where(eq(users.id, id))
+    .returning();
+  if (!user) {
+    return c.json({ message: HttpStatusPhrases.NOT_FOUND }, HttpStatusCodes.NOT_FOUND);
+  }
+  const { id: userId, nom, email, createdAt } = user;
+  return c.json({
+    id: userId,
+    nom,
+    email,
+    createdAt: createdAt ? Number(createdAt) : null,
+  }, HttpStatusCodes.OK);
+};
+
+export const remove: AppRouteHandler<RemoveRoute> = async (c) => {
+  const { id } = c.req.valid("param");
+  const result = await db.delete(users)
+    .where(eq(users.id, id));
+  if (result.rowsAffected === 0) {
+    return c.json({ message: HttpStatusPhrases.NOT_FOUND }, HttpStatusCodes.NOT_FOUND);
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT);
+}; 

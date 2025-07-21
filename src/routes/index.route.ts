@@ -5,6 +5,7 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 import { jsonContent } from "stoker/openapi/helpers";
 import { z } from "@hono/zod-openapi";
 import { createRouter } from "@/lib/create-app";
+import usersRouter from "./users/users.index";
 
 const features = [
   { icon: "🚀", text: "API RESTful moderne avec OpenAPI" },
@@ -190,6 +191,8 @@ router.get("/", (c) => {
     html: "Visitez cette route dans un navigateur pour une belle interface HTML",
   });
 });
+
+router.route("/users", usersRouter);
 
 // OpenAPI handler pour compatibilité
 function openApiHandler(c:any) {
