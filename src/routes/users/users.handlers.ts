@@ -27,6 +27,27 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 export const register: AppRouteHandler<RegisterRoute> = async (c) => {
   const data = c.req.valid("json");
+  // Vérifier si l'email existe déjà
+  const existingUser = await db.query.users.findFirst({
+    where(fields, operators) {
+      return operators.eq(fields.email, data.email);
+    },
+  });
+  if (existingUser) {
+    return c.json({
+      error: {
+        issues: [
+          {
+            code: "custom",
+            path: ["email"],
+            message: "Email déjà utilisé"
+          }
+        ],
+        name: "ZodError"
+      },
+      success: false
+    }, HttpStatusCodes.UNPROCESSABLE_ENTITY);
+  }
   const hashedPassword = await hash(data.password, 10);
   const [user] = await db.insert(users).values({
     nom: data.nom,
