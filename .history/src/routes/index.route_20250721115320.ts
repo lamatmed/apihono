@@ -1,4 +1,3 @@
-/* eslint-disable import/no-duplicates */
 /* eslint-disable perfectionist/sort-imports */
 import { createRoute } from "@hono/zod-openapi";
 import * as HttpStatusCodes from "stoker/http-status-codes";
@@ -63,7 +62,7 @@ const deploymentOptions = [
   },
 ];
 
-function escapeHtml(str: string) {
+function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -192,7 +191,7 @@ router.get("/", (c) => {
 });
 
 // OpenAPI handler pour compatibilité
-function openApiHandler(c:any) {
+function openApiHandler(c) {
   const accept = c.req.header("Accept");
   if (accept?.includes("text/html")) {
     return c.redirect("/", HttpStatusCodes.MOVED_TEMPORARILY);

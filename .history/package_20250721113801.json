@@ -1,3 +1,7 @@
+/** eslint-disable jsonc/sort-keys */
+/** eslint-disable jsonc/sort-keys */
+/** eslint-disable jsonc/sort-keys */
+/** eslint-disable jsonc/sort-keys */
 {
   "name": "hono-open-api-starter",
   "type": "module",
@@ -17,7 +21,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.3",
-    "@hono/zod-openapi": "^0.19.10",
+    "@hono/zod-openapi": "^0.19.8",
     "@libsql/client": "^0.15.8",
     "@scalar/hono-api-reference": "^0.9.2",
     "dotenv": "^17.2.0",
@@ -30,7 +34,9 @@
     "pino-pretty": "^13.0.0",
     "stoker": "1.4.3",
     "vercel": "^44.5.0",
-    "zod": "^3.25.51"
+    "zod": "^3.25.51",
+   
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.13.3",
@@ -42,6 +48,8 @@
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.4",
     "typescript": "^5.0.0",
-    "vitest": "^3.2.1"
+    "vitest": "^3.2.1",
+    "vite": "^5.2.0",
+    "@vitejs/plugin-react": "^4.2.0"
   }
 }

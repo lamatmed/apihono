@@ -192,7 +192,7 @@ router.get("/", (c) => {
 });
 
 // OpenAPI handler pour compatibilité
-function openApiHandler(c:any) {
+function openApiHandler(c) {
   const accept = c.req.header("Accept");
   if (accept?.includes("text/html")) {
     return c.redirect("/", HttpStatusCodes.MOVED_TEMPORARILY);
